@@ -7,9 +7,9 @@
 #include <opencv2/ml/ml.hpp>
 #include <opencv2\nonfree\features2d.hpp>
 
-#define NUM_FILES_TRAIN 10
-#define NUM_FILES_TEST 10
-#define DICTIONARY_SIZE 200
+#define NUM_FILES_TRAIN 35
+#define NUM_FILES_TEST 35
+#define DICTIONARY_SIZE 300
 #define BAR_WIDTH 70
 
 using namespace cv;
@@ -42,7 +42,7 @@ void draw_progress_bar(int current, int total);
 int main()
 {
 	//Init labels
-	cout << "Initializing the labels (responses) from csv file" << endl << endl;
+	cout << "Initializing the labels (responses) from csv file" << endl;
 	ifstream file("trainLabels.csv");
 	string value;
 	for (int i = 0; i < NUM_FILES_TRAIN; i++)
@@ -53,31 +53,87 @@ int main()
 		draw_progress_bar(i+1, NUM_FILES_TRAIN);
 	}
 
-	//SIFT 1
-	cout << "Retrieving keypoints and descriptors using SIFT" << endl << endl; 
-	for (int i = 0; i < NUM_FILES_TRAIN; i++)
+	cv::FileStorage fs("dictionary.yml", cv::FileStorage::READ);
+	if (std::ifstream("dictionary.yml")) // dictionary already exists
 	{
-		string image_name = "train/" + to_string(i+1) + ".png";
-		Mat image = cv::imread(image_name, CV_LOAD_IMAGE_GRAYSCALE);
-		if (!image.data)
+		cout << "Dictionary detected. Loading Vocabulary" << endl;
+		fs["vocabulary"] >> dictionary;
+		fs.release();
+	}
+	else
+	{
+		if (!fs.isOpened())
 		{
-			cout << "[SIFT] Error reading image " << image_name << endl;
-			exit(0);
+			cout << "Dictionary not detected. Creating..." << endl;
+			cout << "Extracting the Descriptors (Feature Vectors) using SIFT" << endl;
+			for (int i = 0; i < NUM_FILES_TRAIN; i++)
+			{
+				string image_name = "train/" + to_string(i + 1) + ".png";
+				Mat image = cv::imread(image_name, CV_LOAD_IMAGE_GRAYSCALE);
+				if (!image.data)
+				{
+					cout << "[SIFT] Error reading image " << image_name << endl;
+					exit(0);
+				}
+				cv::Ptr<cv::FeatureDetector> detector = new cv::SiftFeatureDetector();
+				cv::Ptr<cv::DescriptorExtractor> extractor = new cv::SiftDescriptorExtractor();
+
+				vector<cv::KeyPoint> keypoints;
+				detector->detect(image, keypoints);
+
+				Mat extracted_descriptor;
+				extractor->compute(image, keypoints, extracted_descriptor);
+
+				train_descriptors.push_back(extracted_descriptor);
+
+				draw_progress_bar(i + 1, NUM_FILES_TRAIN);
+			}
+
+			cout << "Creating Bag of Words" << endl;
+			//Create the Bag of Words Trainer
+			cv::BOWKMeansTrainer bag_of_words_trainer(DICTIONARY_SIZE, tc, retries, flags);
+			//cluster the feature vectors, dictionary
+			dictionary = bag_of_words_trainer.cluster(train_descriptors);
+			//store it
+			cv::FileStorage fs("dictionary.yml", cv::FileStorage::WRITE);
+			fs << "vocabulary" << dictionary;
+			fs.release();
 		}
+
+		cout << "Creating the Training Data for KNN based on Dictionary" << endl;
+
+		cv::Ptr<DescriptorMatcher> descr_matcher(new FlannBasedMatcher);
 		cv::Ptr<cv::FeatureDetector> detector = new cv::SiftFeatureDetector();
 		cv::Ptr<cv::DescriptorExtractor> extractor = new cv::SiftDescriptorExtractor();
-		
-		vector<cv::KeyPoint> keypoints;
-		detector->detect(image, keypoints);
+		cv::BOWImgDescriptorExtractor bag_descr_extractor(extractor, descr_matcher);
 
-		Mat extracted_descriptor;
-		extractor->compute(image, keypoints, extracted_descriptor);
-		
-		train_descriptors.push_back(extracted_descriptor);
-		draw_progress_bar(i + 1, NUM_FILES_TRAIN);
+		bag_descr_extractor.setVocabulary(dictionary);
 
-		cout << "Extracted Descriptor Rows x Cols: " << extracted_descriptor.rows << " x " << extracted_descriptor.cols << endl;
+		for (int i = 0; i < NUM_FILES_TRAIN; i++)
+		{
+			string image_name = "train/" + to_string(i + 1) + ".png";
+			Mat image = cv::imread(image_name, CV_LOAD_IMAGE_GRAYSCALE);
+			if (!image.data)
+			{
+				cout << "[SIFT] Error reading image " << image_name << endl;
+				exit(0);
+			}
+
+			vector<cv::KeyPoint> keypoints;
+			detector->detect(image, keypoints);
+
+			Mat bowDescriptor;
+			bag_descr_extractor.compute(image, keypoints, bowDescriptor);
+			trainingData.push_back(bowDescriptor);
+
+			draw_progress_bar(i + 1, NUM_FILES_TRAIN);
+		}
+
+		cout << "Training Data Created" << endl;
+		cout << "Training Data Rows x Cols: " << trainingData.rows << " x " << trainingData.cols << endl;
 	}
+
+
 
 	return 0;
 }

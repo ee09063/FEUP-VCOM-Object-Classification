@@ -32,6 +32,7 @@ Mat labels;
 Mat train_descriptors;
 Mat dictionary;
 Mat trainingData;
+vector<vector<cv::KeyPoint>> keypoint_vector;
 
 TermCriteria tc(CV_TERMCRIT_ITER, 100, 0.001);
 int retries = 1;
@@ -72,7 +73,7 @@ int main()
 				Mat image = cv::imread(image_name, CV_LOAD_IMAGE_GRAYSCALE);
 				if (!image.data)
 				{
-					cout << "[SIFT] Error reading image " << image_name << endl;
+					cout << "[SIFT 1] Error reading image " << image_name << endl;
 					exit(0);
 				}
 				cv::Ptr<cv::FeatureDetector> detector = new cv::SiftFeatureDetector();
@@ -80,6 +81,8 @@ int main()
 
 				vector<cv::KeyPoint> keypoints;
 				detector->detect(image, keypoints);
+
+				keypoint_vector.push_back(keypoints);
 
 				Mat extracted_descriptor;
 				extractor->compute(image, keypoints, extracted_descriptor);
@@ -109,21 +112,18 @@ int main()
 
 		bag_descr_extractor.setVocabulary(dictionary);
 
-		for (int i = 0; i < NUM_FILES_TRAIN; i++)
+		for (int i = 0; i < keypoint_vector.size(); i++)
 		{
 			string image_name = "train/" + to_string(i + 1) + ".png";
 			Mat image = cv::imread(image_name, CV_LOAD_IMAGE_GRAYSCALE);
 			if (!image.data)
 			{
-				cout << "[SIFT] Error reading image " << image_name << endl;
+				cout << "[SIFT 2] Error reading image " << image_name << endl;
 				exit(0);
 			}
-
-			vector<cv::KeyPoint> keypoints;
-			detector->detect(image, keypoints);
-
+			
 			Mat bowDescriptor;
-			bag_descr_extractor.compute(image, keypoints, bowDescriptor);
+			bag_descr_extractor.compute(image, keypoint_vector.at(i), bowDescriptor);
 			trainingData.push_back(bowDescriptor);
 
 			draw_progress_bar(i + 1, NUM_FILES_TRAIN);

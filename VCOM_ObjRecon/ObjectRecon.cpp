@@ -7,8 +7,6 @@
 #include <opencv2/ml/ml.hpp>
 #include <opencv2\nonfree\features2d.hpp>
 
-#define NUM_FILES_TRAIN 35
-#define NUM_FILES_TEST 35
 #define DICTIONARY_SIZE 300
 #define BAR_WIDTH 70
 
@@ -25,14 +23,12 @@ std::map<string, int> Label_ID = {
 	{ "cat", 6 },
 	{ "airplane", 7 },
 	{ "bird", 8 },
-	{ "dog", 9 }
 };
 
 Mat labels;
 Mat train_descriptors;
 Mat dictionary;
 Mat trainingData;
-vector<vector<cv::KeyPoint>> keypoint_vector;
 
 TermCriteria tc(CV_TERMCRIT_ITER, 100, 0.001);
 int retries = 1;
@@ -42,16 +38,12 @@ void draw_progress_bar(int current, int total);
 
 int main()
 {
-	//Init labels
 	cout << "Initializing the labels (responses) from csv file" << endl;
 	ifstream file("trainLabels.csv");
 	string value;
-	for (int i = 0; i < NUM_FILES_TRAIN; i++)
 	{
 		getline(file, value);
 		string csv_label = value.substr(value.find(",") + 1);
-		labels.push_back(Label_ID.find(csv_label)->second);
-		draw_progress_bar(i+1, NUM_FILES_TRAIN);
 	}
 
 	cv::FileStorage fs("dictionary.yml", cv::FileStorage::READ);
@@ -69,27 +61,17 @@ int main()
 			cout << "Extracting the Descriptors (Feature Vectors) using SIFT" << endl;
 			for (int i = 0; i < NUM_FILES_TRAIN; i++)
 			{
-				string image_name = "train/" + to_string(i + 1) + ".png";
-				Mat image = cv::imread(image_name, CV_LOAD_IMAGE_GRAYSCALE);
 				if (!image.data)
 				{
-					cout << "[SIFT 1] Error reading image " << image_name << endl;
 					exit(0);
 				}
-				cv::Ptr<cv::FeatureDetector> detector = new cv::SiftFeatureDetector();
-				cv::Ptr<cv::DescriptorExtractor> extractor = new cv::SiftDescriptorExtractor();
 
 				vector<cv::KeyPoint> keypoints;
-				detector->detect(image, keypoints);
-
-				keypoint_vector.push_back(keypoints);
 
 				Mat extracted_descriptor;
-				extractor->compute(image, keypoints, extracted_descriptor);
 
 				train_descriptors.push_back(extracted_descriptor);
 
-				draw_progress_bar(i + 1, NUM_FILES_TRAIN);
 			}
 
 			cout << "Creating Bag of Words" << endl;
@@ -98,39 +80,15 @@ int main()
 			//cluster the feature vectors, dictionary
 			dictionary = bag_of_words_trainer.cluster(train_descriptors);
 			//store it
-			cv::FileStorage fs("dictionary.yml", cv::FileStorage::WRITE);
 			fs << "vocabulary" << dictionary;
-			fs.release();
 		}
 
-		cout << "Creating the Training Data for KNN based on Dictionary" << endl;
 
-		cv::Ptr<DescriptorMatcher> descr_matcher(new FlannBasedMatcher);
-		cv::Ptr<cv::FeatureDetector> detector = new cv::SiftFeatureDetector();
-		cv::Ptr<cv::DescriptorExtractor> extractor = new cv::SiftDescriptorExtractor();
-		cv::BOWImgDescriptorExtractor bag_descr_extractor(extractor, descr_matcher);
 
-		bag_descr_extractor.setVocabulary(dictionary);
 
-		for (int i = 0; i < keypoint_vector.size(); i++)
 		{
-			string image_name = "train/" + to_string(i + 1) + ".png";
-			Mat image = cv::imread(image_name, CV_LOAD_IMAGE_GRAYSCALE);
-			if (!image.data)
-			{
-				cout << "[SIFT 2] Error reading image " << image_name << endl;
-				exit(0);
-			}
-			
-			Mat bowDescriptor;
-			bag_descr_extractor.compute(image, keypoint_vector.at(i), bowDescriptor);
-			trainingData.push_back(bowDescriptor);
-
-			draw_progress_bar(i + 1, NUM_FILES_TRAIN);
 		}
 
-		cout << "Training Data Created" << endl;
-		cout << "Training Data Rows x Cols: " << trainingData.rows << " x " << trainingData.cols << endl;
 	}
 
 

@@ -7,10 +7,10 @@
 #include <opencv2/ml/ml.hpp>
 #include <opencv2\nonfree\features2d.hpp>
 
-#define NUM_FILES_TRAIN 10000
-#define NUM_FILES_TEST 50
-#define DICTIONARY_SIZE 100
-#define K 5
+int NUM_FILES_TRAIN;
+int NUM_FILES_TEST;
+int DICTIONARY_SIZE;
+int K;
 
 using namespace cv;
 using namespace std;
@@ -32,7 +32,44 @@ TermCriteria tc(CV_TERMCRIT_ITER, 100, 0.001);
 int retries = 1;
 int flags = KMEANS_PP_CENTERS;
 
-void draw_progress_bar(int current, int total);
+void initConfigVars()
+{
+	ifstream file("vars.config");
+	string str;
+	string delimiter = "=";
+
+	for (int i = 0; i < 4; i++)
+	{
+		getline(file, str);
+		size_t pos = 0;
+		string var;
+		string var_value;
+		while ((pos = str.find(delimiter)) != string::npos)
+		{
+			var = str.substr(0, pos);
+			var_value = str.erase(0, pos + delimiter.length());
+		}
+
+		int value = std::stoi(var_value);
+
+		if (i == 0)
+		{
+			NUM_FILES_TRAIN = value;
+		}
+		else if (i == 1)
+		{
+			NUM_FILES_TEST = value;
+		}
+		else if (i == 2)
+		{
+			DICTIONARY_SIZE = value;
+		} 
+		else if (i == 3)
+		{
+			K = value;
+		}
+	}
+}
 
 bool contains(vector<int> vec, int elem)
 {
@@ -46,26 +83,33 @@ bool contains(vector<int> vec, int elem)
 	return false;
 }
 
-void correctLabels()
+void initializeLabels()
 {
 	cout << "Correcting labels" << endl;
-	cout << "Number of labels to remove " << lost_images.size() << endl;
-	for (int i = 0; i < label_vec.size(); i++)
+	
+	std::cout << "Initializing the labels (responses) from csv file" << endl;
+	cout << "Number of errors reading images " << lost_images.size() << endl;
+
+	ifstream file("trainLabels.csv");
+	string value;
+
+	int number_of_labels = 0;
+
+	for (int i = 0; i < NUM_FILES_TRAIN; i++)
 	{
-		int elem = i;
-		if (!contains(lost_images, elem))
+		getline(file, value);
+		if (!contains(lost_images, i))
 		{
-			cout << "From vector to matrix: " << i + 1 << " / " << label_vec.size() << '\r';
-			Mat row = (Mat_<int>(1, 1) << elem);
-			labels.push_back(row);
-		}
-		else
-		{
-			cout << endl;
-			string removed_image_name = "train/" + to_string(i + 1) + ".png";
-			cout << "Removing label " << i << " --> " << removed_image_name << endl;
+			string csv_label = value.substr(value.find(",") + 1);
+			int label = Label_ID.find(csv_label)->second;
+			labels.push_back(label);
+			number_of_labels++;
+			std::cout << i + 1 << " / " << (NUM_FILES_TRAIN-lost_images.size()) << '\r';
 		}
 	}
+
+	std::cout << endl;
+	std::cout << "Initiated " << number_of_labels << " labels" << endl;
 }
 
 void instantiateMaps()
@@ -175,28 +219,9 @@ int main()
 {
 	std::cout << "Populating maps" << endl;
 
+	initConfigVars();
+	
 	instantiateMaps();
-
-	std::cout << "Initializing the labels (responses) from csv file" << endl;
-
-	ifstream file("trainLabels.csv");
-	string value;
-
-	int number_of_labels = 0;
-
-	for (int i = 0; i < NUM_FILES_TRAIN; i++)
-	{
-		getline(file, value);
-		string csv_label = value.substr(value.find(",") + 1);
-		int label = Label_ID.find(csv_label)->second;
-		label_vec.push_back(label);
-		//labels.push_back(label);
-		number_of_labels++;
-		std::cout << i+1 << " / " << NUM_FILES_TRAIN << '\r';
-	}
-
-	std::cout << endl;
-	std::cout << "Initiated " << number_of_labels << " labels" << endl;
 
 	Mat dictionary;
 	cv::FileStorage fs("vocabulary.xml", cv::FileStorage::READ);
@@ -213,19 +238,9 @@ int main()
 		std::cout << "Vocabulary not detected. Creating..." << endl;
 		std::cout << "Extracting the Descriptors (Feature Vectors) using SIFT" << endl;
 
-		string expected_name;
-		int num_of_images = 1;
-
 		for (int i = 0; i < NUM_FILES_TRAIN; i++)
 		{
-			expected_name = "train/" + to_string(num_of_images) + ".png";
 			string image_name_sift1 = "train/" + to_string(i + 1) + ".png";
-			if (expected_name.compare(image_name_sift1) != 0)
-			{
-				std::cout << "Expected name was " << expected_name << endl;
-				std::cout << "Image name was " << image_name_sift1 << endl;
-				exit(-1);
-			}
 			Mat image = cv::imread(image_name_sift1, CV_LOAD_IMAGE_GRAYSCALE);
 			if (!image.data)
 			{
@@ -246,7 +261,6 @@ int main()
 			train_descriptors.push_back(extracted_descriptor);
 
 			std::cout << i+1 << " / " << NUM_FILES_TRAIN << " -- " << image_name_sift1 <<'\r';
-			num_of_images++;
 		}
 
 		std::cout << endl;
@@ -259,9 +273,9 @@ int main()
 		std::cout << "Created Dictionary info: " << dictionary.size() << endl;
 
 		//store it
-		/*fs.open("vocabulary.xml", cv::FileStorage::WRITE);
-		fs << "vocabulary" << dictionary;
-		fs.release();*/
+		//fs.open("vocabulary.xml", cv::FileStorage::WRITE);
+		//fs << "vocabulary" << dictionary;
+		//fs.release();
 	}
 
 	std::cout << "Creating the Training Data for KNN and SVM based on Dictionary" << endl;
@@ -305,7 +319,7 @@ int main()
 	}
 
 	cout << endl;
-	correctLabels();
+	initializeLabels();
 
 	std::cout << endl;
 	std::cout << "Training Data Created" << endl;

@@ -28,6 +28,9 @@ Mat trainingData;
 
 vector<vector<cv::KeyPoint>> same_keys; 
 
+vector<float> KNNResult;
+vector<float> SVMResult;
+
 TermCriteria tc(CV_TERMCRIT_ITER, 100, 0.001);
 int retries = 1;
 int flags = KMEANS_PP_CENTERS;
@@ -71,6 +74,31 @@ void initConfigVars()
 	}
 }
 
+void instantiateMaps()
+{
+	Label_ID["frog"] = 0;
+	Label_ID["truck"] = 1;
+	Label_ID["automobile"] = 2;
+	Label_ID["bird"] = 3;
+	Label_ID["horse"] = 4;
+	Label_ID["ship"] = 5;
+	Label_ID["cat"] = 6;
+	Label_ID["airplane"] = 7;
+	Label_ID["dog"] = 8;
+	Label_ID["deer"] = 9;
+
+	Label_ID_reverse[0] = "frog";
+	Label_ID_reverse[1] = "truck";
+	Label_ID_reverse[2] = "automobile";
+	Label_ID_reverse[3] = "bird";
+	Label_ID_reverse[4] = "horse";
+	Label_ID_reverse[5] = "ship";
+	Label_ID_reverse[6] = "cat";
+	Label_ID_reverse[7] = "airplane";
+	Label_ID_reverse[8] = "dog";
+	Label_ID_reverse[9] = "deer";
+}
+
 bool contains(vector<int> vec, int elem)
 {
 	for (int i = 0; i < vec.size(); i++)
@@ -112,29 +140,47 @@ void initializeLabels()
 	std::cout << "Initiated " << number_of_labels << " labels" << endl;
 }
 
-void instantiateMaps()
+bool resultIsExpected(int pos, float result)
 {
-	Label_ID["frog"] = 0;
-	Label_ID["truck"] = 1;
-	Label_ID["automobile"] = 2;
-	Label_ID["bird"] = 3;
-	Label_ID["horse"] = 4;
-	Label_ID["ship"] = 5;
-	Label_ID["cat"] = 6;
-	Label_ID["airplane"] = 7;
-	Label_ID["dog"] = 8;
-	Label_ID["deer"] = 9;
+	return result == (pos / 10);
+}
 
-	Label_ID_reverse[0] = "frog";
-	Label_ID_reverse[1] = "truck";
-	Label_ID_reverse[2] = "automobile";
-	Label_ID_reverse[3] = "bird";
-	Label_ID_reverse[4] = "horse";
-	Label_ID_reverse[5] = "ship";
-	Label_ID_reverse[6] = "cat";
-	Label_ID_reverse[7] = "airplane";
-	Label_ID_reverse[8] = "dog";
-	Label_ID_reverse[9] = "deer";
+void printResults()
+{
+	//process KNN results
+	int KNNSuccess = 0;
+	ofstream knn_sub("knn_submission.csv");
+	knn_sub << "id,label\n";
+
+	for (int i = 0; i < KNNResult.size(); i++)
+	{
+		if (resultIsExpected(i, KNNResult.at(i)))
+		{
+			KNNSuccess++;
+		}
+		knn_sub << i + 1 << "," << KNNResult.at(i) << "\n";
+	}
+
+	cout << "KNN Success Rate: " << KNNSuccess << " / " << KNNResult.size() << endl;
+
+	//process SVM results
+
+	int SVMSuccess = 0;
+	ofstream svm_sub("svm_submission.csv");
+	svm_sub << "id,label\n";
+
+	cout << "Comparing " << SVMResult.size() << " SVM Results" << endl;
+
+	for (int i = 0; i < SVMResult.size(); i++)
+	{
+		if (resultIsExpected(i, SVMResult.at(i)))
+		{
+			SVMSuccess++;
+		}
+		svm_sub << i + 1 << "," << SVMResult.at(i) << "\n";
+	}
+
+	cout << "SVM Success Rate: " << SVMSuccess << " / " << SVMResult.size() << endl;
 }
 
 void applyKNN(cv::BOWImgDescriptorExtractor bag_descr_extractor)
@@ -148,6 +194,7 @@ void applyKNN(cv::BOWImgDescriptorExtractor bag_descr_extractor)
 	std::cout << "KNN Classifier Trained" << endl;
 
 	std::cout << "KNN Testing" << endl;
+
 	for (int i = 0; i < NUM_FILES_TEST; i++)
 	{
 		string test_image_name = TEST_DIR + to_string(i + 1) + ".png";
@@ -158,19 +205,26 @@ void applyKNN(cv::BOWImgDescriptorExtractor bag_descr_extractor)
 			exit(0);
 		}
 
-		cv::Ptr<cv::FeatureDetector> detector_test = new cv::SiftFeatureDetector();
-		//vector<cv::KeyPoint> keypoints_desc;
-		//detector_test->detect(image, keypoints_desc);
+		cout << test_image_name << " / " << NUM_FILES_TEST << '\r';
 
+		cv::Ptr<cv::FeatureDetector> detector_test = new cv::SiftFeatureDetector();
 		Mat bowDescriptor_test;
-		//		bag_descr_extractor.compute(image, keypoints_desc, bowDescriptor_test);
 		bag_descr_extractor.compute(image, same_keys.at(i), bowDescriptor_test);
 
-		cv::Mat result;
-		knn->find_nearest(bowDescriptor_test, K, result, cv::Mat(), cv::Mat());
-
-		std::cout << i + 1 << " " << Label_ID_reverse.find(result.at<float>(0, 0))->second << endl;
+		if (bowDescriptor_test.cols != DICTIONARY_SIZE)
+		{
+			cout << endl;
+			cout << "Error at image " << test_image_name << " Descriptor Size: " << bowDescriptor_test.size();
+			cout << endl;
+		}
+		else
+		{
+			cv::Mat result;
+			knn->find_nearest(bowDescriptor_test, K, result, cv::Mat(), cv::Mat());
+			KNNResult.push_back(result.at<float>(0, 0));
+		}
 	}
+	cout << endl;
 }
 
 void applySVM(cv::BOWImgDescriptorExtractor bag_descr_extractor)
@@ -179,7 +233,7 @@ void applySVM(cv::BOWImgDescriptorExtractor bag_descr_extractor)
 
 	CvSVMParams params;
 	params.svm_type = CvSVM::C_SVC;
-	params.kernel_type = CvSVM::LINEAR;
+	params.kernel_type = CvSVM::POLY;
 	params.term_crit = tc;
 
 	std::cout << "Training the SVM" << endl;
@@ -200,19 +254,26 @@ void applySVM(cv::BOWImgDescriptorExtractor bag_descr_extractor)
 			exit(0);
 		}
 
-		cv::Ptr<cv::FeatureDetector> detector_test = new cv::SiftFeatureDetector();
-		//vector<cv::KeyPoint> keypoints_desc;
-		//detector_test->detect(image, keypoints_desc);
+		cout << test_image_name << " / " << NUM_FILES_TEST << '\r';
 
+		cv::Ptr<cv::FeatureDetector> detector_test = new cv::SiftFeatureDetector();		
 		Mat bowDescriptor_test;
-		//		bag_descr_extractor.compute(image, keypoints_desc, bowDescriptor_test);
 		bag_descr_extractor.compute(image, same_keys.at(i), bowDescriptor_test);
 
-		float result;
-		result = SVM.predict(bowDescriptor_test);
-
-		std::cout << i + 1 << " " << Label_ID_reverse.find(result)->second << endl;
+		if (bowDescriptor_test.cols != DICTIONARY_SIZE)
+		{
+			cout << endl;
+			cout << "Error at image " << test_image_name << " Descriptor Size: " << bowDescriptor_test.size();
+			cout << endl;
+		}
+		else
+		{
+			float result;
+			result = SVM.predict(bowDescriptor_test);
+			SVMResult.push_back(result);
+		}
 	}
+	cout << endl;
 }
 
 int main()
@@ -297,18 +358,13 @@ int main()
 			exit(0);
 		}
 
-		//vector<cv::KeyPoint> keypoints;
-		//detector_train->detect(image, keypoints);
-
 		Mat bowDescriptor;
-		//bag_descr_extractor.compute(image, keypoints, bowDescriptor);
-
 		bag_descr_extractor.compute(image, same_keys.at(i), bowDescriptor);
 
-		if (bowDescriptor.cols != 100)
+		if (bowDescriptor.cols != DICTIONARY_SIZE)
 		{
 			cout << endl;
-			cout << "Error at image " << image_name_sift2 << " Descriptor Size: " << bowDescriptor.size();
+			cout << "Error in test image " << image_name_sift2 << " Descriptor Size: " << bowDescriptor.size();
 			lost_images.push_back(i);
 			cout << endl;
 		}
@@ -326,9 +382,11 @@ int main()
 	std::cout << "Training Data Size: " << trainingData.size() << endl;
 	std::cout << "Number of labels: " << labels.size() << endl;
 
-	//applyKNN(bag_descr_extractor);
+	applyKNN(bag_descr_extractor);
 
-	//applySVM(bag_descr_extractor);
+	applySVM(bag_descr_extractor);
+
+	printResults();
 	
 	return 0;
 }

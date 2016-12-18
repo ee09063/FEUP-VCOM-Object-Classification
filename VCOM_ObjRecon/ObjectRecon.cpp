@@ -1,19 +1,19 @@
 #include <iostream>
 #include <fstream>
 #include <string>
-#include <opencv2/features2d.hpp>
-#include <opencv2/core/core.hpp>
-#include <opencv2/highgui/highgui.hpp>
-#include <opencv2/ml/ml.hpp>
+#include <opencv2\features2d\features2d.hpp>
+#include <opencv2\core\core.hpp>
+#include <opencv2\highgui\highgui.hpp>
+#include <opencv2\ml\ml.hpp>
 #include <opencv2\nonfree\features2d.hpp>
+
+using namespace cv;
+using namespace std;
 
 int NUM_FILES_TRAIN;
 int NUM_FILES_TEST;
 int DICTIONARY_SIZE;
 int K;
-
-using namespace cv;
-using namespace std;
 
 std::map<string, int> Label_ID;
 std::map<float, string> Label_ID_reverse;
@@ -22,11 +22,10 @@ string TEST_DIR = "test/";
 
 Mat labels;
 vector<int> label_vec;
-vector<int> lost_images;
 Mat train_descriptors;
 Mat trainingData;
 
-vector<vector<cv::KeyPoint>> same_keys; 
+//vector<vector<cv::KeyPoint>> same_keys;
 
 vector<float> KNNResult;
 vector<float> SVMResult;
@@ -99,45 +98,28 @@ void instantiateMaps()
 	Label_ID_reverse[9] = "deer";
 }
 
-bool contains(vector<int> vec, int elem)
+void initializeLabels(int number_of_images)
 {
-	for (int i = 0; i < vec.size(); i++)
-	{
-		if (vec.at(i) == elem)
-		{
-			return true;
-		}
-	}
-	return false;
-}
-
-void initializeLabels()
-{
-	cout << "Correcting labels" << endl;
-	
-	std::cout << "Initializing the labels (responses) from csv file" << endl;
-	cout << "Number of errors reading images " << lost_images.size() << endl;
+	cout << endl << "Initializing the labels (responses) from csv file" << endl;
 
 	ifstream file("trainLabels.csv");
 	string value;
 
 	int number_of_labels = 0;
 
-	for (int i = 0; i < NUM_FILES_TRAIN; i++)
+	for (int i = 0; i < number_of_images; i++)
 	{
-		getline(file, value);
-		if (!contains(lost_images, i))
-		{
-			string csv_label = value.substr(value.find(",") + 1);
-			int label = Label_ID.find(csv_label)->second;
-			labels.push_back(label);
-			number_of_labels++;
-			std::cout << i + 1 << " / " << (NUM_FILES_TRAIN-lost_images.size()) << '\r';
-		}
+		getline(file, value);	
+		string csv_label = value.substr(value.find(",") + 1);
+		int label = Label_ID.find(csv_label)->second;
+		labels.push_back(label);
+		number_of_labels++;
+		cout << i + 1 << " / " << number_of_images << '\r';
+
 	}
 
-	std::cout << endl;
-	std::cout << "Initiated " << number_of_labels << " labels" << endl;
+	cout << endl;
+	cout << "Initiated " << number_of_labels << " labels" << endl;
 }
 
 bool resultIsExpected(int pos, float result)
@@ -147,10 +129,13 @@ bool resultIsExpected(int pos, float result)
 
 void printResults()
 {
+	cout << endl << "Results: " << endl;
 	//process KNN results
 	int KNNSuccess = 0;
 	ofstream knn_sub("knn_submission.csv");
 	knn_sub << "id,label\n";
+
+	cout << "Comparing " << KNNResult.size() << " KNN Results" << endl;
 
 	for (int i = 0; i < KNNResult.size(); i++)
 	{
@@ -186,30 +171,34 @@ void printResults()
 void applyKNN(cv::BOWImgDescriptorExtractor bag_descr_extractor)
 {
 	//KNN CLASSIFIER
-	std::cout << "Training KNN Classifier" << endl;
+	cout << endl << "Training KNN Classifier" << endl;
 
 	cv::Ptr<cv::KNearest> knn = new cv::KNearest;
 	knn->train(trainingData, labels, cv::Mat(), false, 32, false);
 
-	std::cout << "KNN Classifier Trained" << endl;
+	cout << "KNN Classifier Trained" << endl;
 
-	std::cout << "KNN Testing" << endl;
+	cout << "KNN Testing" << endl;
 
 	for (int i = 0; i < NUM_FILES_TEST; i++)
 	{
 		string test_image_name = TEST_DIR + to_string(i + 1) + ".png";
 		Mat image = cv::imread(test_image_name, CV_LOAD_IMAGE_GRAYSCALE);
+		
 		if (!image.data)
 		{
 			std::cout << "[SIFT 3] Error reading image " << test_image_name << endl;
 			exit(0);
 		}
 
-		cout << test_image_name << " / " << NUM_FILES_TEST << '\r';
+		cout << (i + 1) << " / " << NUM_FILES_TEST << '\r';
 
 		cv::Ptr<cv::FeatureDetector> detector_test = new cv::SiftFeatureDetector();
+		vector<cv::KeyPoint> keypoints;
+		detector_test->detect(image, keypoints);
+
 		Mat bowDescriptor_test;
-		bag_descr_extractor.compute(image, same_keys.at(i), bowDescriptor_test);
+		bag_descr_extractor.compute(image, keypoints, bowDescriptor_test);
 
 		if (bowDescriptor_test.cols != DICTIONARY_SIZE)
 		{
@@ -229,11 +218,11 @@ void applyKNN(cv::BOWImgDescriptorExtractor bag_descr_extractor)
 
 void applySVM(cv::BOWImgDescriptorExtractor bag_descr_extractor)
 {
-	std::cout << "Setting up SVM parameters" << endl;
+	cout << endl << "Setting up SVM parameters" << endl;
 
 	CvSVMParams params;
 	params.svm_type = CvSVM::C_SVC;
-	params.kernel_type = CvSVM::POLY;
+	params.kernel_type = CvSVM::RBF;
 	params.term_crit = tc;
 
 	std::cout << "Training the SVM" << endl;
@@ -254,11 +243,14 @@ void applySVM(cv::BOWImgDescriptorExtractor bag_descr_extractor)
 			exit(0);
 		}
 
-		cout << test_image_name << " / " << NUM_FILES_TEST << '\r';
+		cout << (i + 1) << " / " << NUM_FILES_TEST << '\r';
 
 		cv::Ptr<cv::FeatureDetector> detector_test = new cv::SiftFeatureDetector();		
+		vector<cv::KeyPoint> keypoints;
+		detector_test->detect(image, keypoints);
+
 		Mat bowDescriptor_test;
-		bag_descr_extractor.compute(image, same_keys.at(i), bowDescriptor_test);
+		bag_descr_extractor.compute(image, keypoints, bowDescriptor_test);
 
 		if (bowDescriptor_test.cols != DICTIONARY_SIZE)
 		{
@@ -278,7 +270,7 @@ void applySVM(cv::BOWImgDescriptorExtractor bag_descr_extractor)
 
 int main()
 {
-	std::cout << "Populating maps" << endl;
+	cout << endl << "Populating maps" << endl << endl;
 
 	initConfigVars();
 	
@@ -287,59 +279,40 @@ int main()
 	Mat dictionary;
 	cv::FileStorage fs("vocabulary.xml", cv::FileStorage::READ);
 
-	if (fs.isOpened()) // dictionary already exists
-	{
-		std::cout << "Dictionary detected. Loading Vocabulary" << endl;
-		fs[ "vocabulary" ] >> dictionary;
-		std::cout << "Loaded Vocabulary info: " << dictionary.size() << endl;
-	}
-	else
-	{
-		fs.release();
-		std::cout << "Vocabulary not detected. Creating..." << endl;
-		std::cout << "Extracting the Descriptors (Feature Vectors) using SIFT" << endl;
+	fs.release();
+	cout << "Vocabulary not detected. Creating..." << endl;
+	cout << "Extracting the Descriptors (Feature Vectors) using SIFT" << endl;
 
-		for (int i = 0; i < NUM_FILES_TRAIN; i++)
+	for (int i = 0; i < NUM_FILES_TRAIN; i++)
+	{
+		string image_name_sift1 = "train/" + to_string(i + 1) + ".png";
+		Mat image = cv::imread(image_name_sift1, CV_LOAD_IMAGE_GRAYSCALE);
+		if (image.data)
 		{
-			string image_name_sift1 = "train/" + to_string(i + 1) + ".png";
-			Mat image = cv::imread(image_name_sift1, CV_LOAD_IMAGE_GRAYSCALE);
-			if (!image.data)
-			{
-				std::cout << "[SIFT 1] Error reading image " << image_name_sift1 << endl;
-				exit(-1);
-			}
 			cv::Ptr<cv::FeatureDetector> detector_dictionary = new cv::SiftFeatureDetector();
 			cv::Ptr<cv::DescriptorExtractor> extractor_dictionary = new cv::SiftDescriptorExtractor();
 
 			vector<cv::KeyPoint> keypoints;
 			detector_dictionary->detect(image, keypoints);
 
-			same_keys.push_back(keypoints);
-
 			Mat extracted_descriptor;
 			extractor_dictionary->compute(image, keypoints, extracted_descriptor);
 
 			train_descriptors.push_back(extracted_descriptor);
 
-			std::cout << i+1 << " / " << NUM_FILES_TRAIN << " -- " << image_name_sift1 <<'\r';
+			std::cout << i + 1 << " / " << NUM_FILES_TRAIN << " -- " << image_name_sift1 << '\r';
 		}
-
-		std::cout << endl;
-		std::cout << "Creating Bag of Words" << endl;
-
-		cv::BOWKMeansTrainer bag_of_words_trainer(DICTIONARY_SIZE, tc, retries, flags);
-
-		dictionary = bag_of_words_trainer.cluster(train_descriptors);
-
-		std::cout << "Created Dictionary info: " << dictionary.size() << endl;
-
-		//store it
-		//fs.open("vocabulary.xml", cv::FileStorage::WRITE);
-		//fs << "vocabulary" << dictionary;
-		//fs.release();
 	}
 
-	std::cout << "Creating the Training Data for KNN and SVM based on Dictionary" << endl;
+	cout << endl;
+	cout << endl << "Creating Bag of Words" << endl;
+
+	cv::BOWKMeansTrainer bag_of_words_trainer(DICTIONARY_SIZE, tc, retries, flags);
+	dictionary = bag_of_words_trainer.cluster(train_descriptors);
+
+	cout << "Bag of Words info: " << dictionary.size() << endl << endl;
+
+	cout << "Creating the Training Data for KNN and SVM based on Bag of Words" << endl;
 
 	cv::Ptr<DescriptorMatcher> descr_matcher(new FlannBasedMatcher);
 	cv::Ptr<cv::FeatureDetector> detector_train = new cv::SiftFeatureDetector();
@@ -347,40 +320,44 @@ int main()
 	cv::BOWImgDescriptorExtractor bag_descr_extractor(extractor_train, descr_matcher);
 	
 	bag_descr_extractor.setVocabulary(dictionary);
-	
+
+	int number_of_images = 0;
+
 	for (int i = 0; i < NUM_FILES_TRAIN; i++)
 	{
 		string image_name_sift2 = "train/" + to_string(i + 1) + ".png";
 		Mat image = cv::imread(image_name_sift2, CV_LOAD_IMAGE_GRAYSCALE);
-		if (!image.data)
+		
+		if (image.data)
 		{
-			std::cout << "[SIFT 2] Error reading image " << image_name_sift2 << endl;
-			exit(0);
+			number_of_images++;
+			cv::Ptr<cv::FeatureDetector> detector_train = new cv::SiftFeatureDetector();
+			vector<cv::KeyPoint> keypoints;
+			detector_train->detect(image, keypoints);
+
+			Mat bowDescriptor;
+			bag_descr_extractor.compute(image, keypoints, bowDescriptor);
+
+			if (bowDescriptor.cols != DICTIONARY_SIZE)
+			{
+				std::cout << endl;
+				std::cout << "Error in train image " << image_name_sift2 << " Descriptor Size: " << bowDescriptor.size();
+				std::cout << endl;
+			}
+
+			trainingData.push_back(bowDescriptor);
+
+			std::cout << i + 1 << " / " << NUM_FILES_TRAIN << " -- " << image_name_sift2 << '\r';
 		}
-
-		Mat bowDescriptor;
-		bag_descr_extractor.compute(image, same_keys.at(i), bowDescriptor);
-
-		if (bowDescriptor.cols != DICTIONARY_SIZE)
-		{
-			cout << endl;
-			cout << "Error in test image " << image_name_sift2 << " Descriptor Size: " << bowDescriptor.size();
-			lost_images.push_back(i);
-			cout << endl;
-		}
-
-		trainingData.push_back(bowDescriptor);
-
-		std::cout << i + 1 << " / " << NUM_FILES_TRAIN << " -- " << image_name_sift2 << '\r';
 	}
 
 	cout << endl;
-	initializeLabels();
 
-	std::cout << endl;
-	std::cout << "Training Data Created" << endl;
-	std::cout << "Training Data Size: " << trainingData.size() << endl;
-	std::cout << "Number of labels: " << labels.size() << endl;
+	initializeLabels(number_of_images);
+
+	cout << endl << "Training Data Created" << endl;
+	cout << "Training Data Size: " << trainingData.size() << endl;
+	cout << "Number of labels: " << labels.size() << endl;
 
 	applyKNN(bag_descr_extractor);
 

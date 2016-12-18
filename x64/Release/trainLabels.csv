@@ -418,7 +418,6 @@
 418,airplane
 419,ship
 420,truck
-421,deer
 422,bird
 423,horse
 424,bird
@@ -904,7 +903,6 @@
 904,frog
 905,deer
 906,airplane
-907,airplane
 908,bird
 909,dog
 910,ship
@@ -2608,7 +2606,6 @@
 2608,frog
 2609,horse
 2610,truck
-2611,bird
 2612,horse
 2613,horse
 2614,airplane
@@ -2806,7 +2803,6 @@
 2806,ship
 2807,dog
 2808,horse
-2809,airplane
 2810,cat
 2811,frog
 2812,deer
@@ -3257,7 +3253,6 @@
 3257,truck
 3258,automobile
 3259,ship
-3260,bird
 3261,deer
 3262,horse
 3263,frog
@@ -4275,7 +4270,6 @@
 4275,ship
 4276,dog
 4277,frog
-4278,ship
 4279,frog
 4280,frog
 4281,deer
@@ -4298,7 +4292,6 @@
 4298,deer
 4299,ship
 4300,automobile
-4301,ship
 4302,deer
 4303,cat
 4304,ship
@@ -5008,7 +5001,6 @@
 5008,cat
 5009,cat
 5010,truck
-5011,airplane
 5012,truck
 5013,bird
 5014,truck
@@ -5253,7 +5245,6 @@
 5253,bird
 5254,ship
 5255,horse
-5256,ship
 5257,deer
 5258,automobile
 5259,horse
@@ -5986,7 +5977,6 @@
 5986,ship
 5987,ship
 5988,ship
-5989,airplane
 5990,horse
 5991,bird
 5992,horse
@@ -6404,7 +6394,6 @@
 6404,ship
 6405,cat
 6406,cat
-6407,frog
 6408,ship
 6409,bird
 6410,horse
@@ -7087,7 +7076,6 @@
 7087,cat
 7088,automobile
 7089,horse
-7090,bird
 7091,dog
 7092,frog
 7093,frog
@@ -8070,7 +8058,6 @@
 8070,frog
 8071,ship
 8072,frog
-8073,airplane
 8074,ship
 8075,ship
 8076,truck
@@ -8441,7 +8428,6 @@
 8441,bird
 8442,truck
 8443,frog
-8444,airplane
 8445,airplane
 8446,ship
 8447,frog
@@ -9006,7 +8992,6 @@
 9006,cat
 9007,cat
 9008,automobile
-9009,cat
 9010,airplane
 9011,deer
 9012,bird
@@ -9662,7 +9647,6 @@
 9662,deer
 9663,frog
 9664,ship
-9665,ship
 9666,dog
 9667,airplane
 9668,cat
@@ -9879,7 +9863,6 @@
 9879,automobile
 9880,dog
 9881,truck
-9882,airplane
 9883,ship
 9884,ship
 9885,automobile
@@ -9983,7 +9966,6 @@
 9983,cat
 9984,airplane
 9985,airplane
-9986,airplane
 9987,bird
 9988,dog
 9989,automobile
@@ -10093,7 +10075,6 @@
 10093,truck
 10094,bird
 10095,horse
-10096,ship
 10097,ship
 10098,frog
 10099,ship
@@ -11052,7 +11033,6 @@
 11052,horse
 11053,cat
 11054,horse
-11055,airplane
 11056,cat
 11057,airplane
 11058,horse
@@ -11071,7 +11051,6 @@
 11071,frog
 11072,dog
 11073,dog
-11074,airplane
 11075,deer
 11076,automobile
 11077,airplane
@@ -11628,7 +11607,6 @@
 11628,ship
 11629,cat
 11630,bird
-11631,bird
 11632,automobile
 11633,cat
 11634,airplane
@@ -11648,7 +11626,6 @@
 11648,frog
 11649,horse
 11650,deer
-11651,bird
 11652,frog
 11653,ship
 11654,cat
@@ -12159,7 +12136,6 @@
 12159,automobile
 12160,truck
 12161,deer
-12162,bird
 12163,truck
 12164,horse
 12165,automobile
@@ -12505,7 +12481,6 @@
 12505,bird
 12506,deer
 12507,bird
-12508,airplane
 12509,frog
 12510,airplane
 12511,deer
@@ -13041,7 +13016,6 @@
 13041,automobile
 13042,ship
 13043,bird
-13044,airplane
 13045,automobile
 13046,dog
 13047,frog
@@ -13073,7 +13047,6 @@
 13073,ship
 13074,dog
 13075,truck
-13076,bird
 13077,frog
 13078,frog
 13079,truck
@@ -13839,7 +13812,6 @@
 13839,frog
 13840,automobile
 13841,dog
-13842,airplane
 13843,dog
 13844,automobile
 13845,frog
@@ -13953,7 +13925,6 @@
 13953,automobile
 13954,cat
 13955,ship
-13956,bird
 13957,frog
 13958,cat
 13959,ship
@@ -15266,7 +15237,6 @@
 15266,cat
 15267,cat
 15268,deer
-15269,ship
 15270,cat
 15271,horse
 15272,horse
@@ -16002,7 +15972,6 @@
 16002,truck
 16003,airplane
 16004,frog
-16005,airplane
 16006,horse
 16007,automobile
 16008,deer
@@ -16731,7 +16700,6 @@
 16731,ship
 16732,cat
 16733,bird
-16734,airplane
 16735,airplane
 16736,truck
 16737,automobile
@@ -16886,7 +16854,6 @@
 16886,truck
 16887,dog
 16888,frog
-16889,deer
 16890,deer
 16891,deer
 16892,deer
@@ -17710,7 +17677,6 @@
 17710,truck
 17711,dog
 17712,dog
-17713,bird
 17714,deer
 17715,horse
 17716,frog
@@ -18946,7 +18912,6 @@
 18946,dog
 18947,dog
 18948,truck
-18949,bird
 18950,cat
 18951,ship
 18952,airplane
@@ -20013,7 +19978,6 @@
 20013,frog
 20014,truck
 20015,airplane
-20016,airplane
 20017,horse
 20018,cat
 20019,horse
@@ -20231,7 +20195,6 @@
 20231,horse
 20232,truck
 20233,truck
-20234,airplane
 20235,cat
 20236,horse
 20237,airplane
@@ -20535,7 +20498,6 @@
 20535,cat
 20536,frog
 20537,automobile
-20538,airplane
 20539,bird
 20540,airplane
 20541,ship
@@ -20619,7 +20581,6 @@
 20619,horse
 20620,automobile
 20621,ship
-20622,bird
 20623,airplane
 20624,frog
 20625,cat
@@ -20776,7 +20737,6 @@
 20776,frog
 20777,dog
 20778,automobile
-20779,deer
 20780,bird
 20781,horse
 20782,automobile
@@ -21230,7 +21190,6 @@
 21230,deer
 21231,automobile
 21232,airplane
-21233,airplane
 21234,dog
 21235,automobile
 21236,dog
@@ -22802,7 +22761,6 @@
 22802,frog
 22803,truck
 22804,bird
-22805,frog
 22806,truck
 22807,horse
 22808,truck
@@ -25234,7 +25192,6 @@
 25234,dog
 25235,frog
 25236,cat
-25237,airplane
 25238,ship
 25239,ship
 25240,ship
@@ -25732,7 +25689,6 @@
 25732,automobile
 25733,dog
 25734,dog
-25735,bird
 25736,dog
 25737,truck
 25738,ship
@@ -25929,7 +25885,6 @@
 25929,bird
 25930,bird
 25931,airplane
-25932,deer
 25933,frog
 25934,cat
 25935,cat
@@ -26720,8 +26675,6 @@
 26720,frog
 26721,ship
 26722,cat
-26723,airplane
-26724,airplane
 26725,airplane
 26726,frog
 26727,cat
@@ -27594,7 +27547,6 @@
 27594,truck
 27595,bird
 27596,frog
-27597,deer
 27598,bird
 27599,dog
 27600,bird
@@ -27929,7 +27881,6 @@
 27929,frog
 27930,horse
 27931,horse
-27932,airplane
 27933,ship
 27934,frog
 27935,airplane
@@ -28000,7 +27951,6 @@
 28000,dog
 28001,airplane
 28002,automobile
-28003,deer
 28004,airplane
 28005,truck
 28006,automobile
@@ -28014,7 +27964,6 @@
 28014,deer
 28015,airplane
 28016,horse
-28017,ship
 28018,airplane
 28019,automobile
 28020,truck
@@ -28616,7 +28565,6 @@
 28616,automobile
 28617,dog
 28618,automobile
-28619,bird
 28620,airplane
 28621,deer
 28622,frog
@@ -28805,7 +28753,6 @@
 28805,automobile
 28806,automobile
 28807,frog
-28808,ship
 28809,cat
 28810,deer
 28811,automobile
@@ -29913,7 +29860,6 @@
 29913,bird
 29914,frog
 29915,horse
-29916,ship
 29917,horse
 29918,airplane
 29919,truck
@@ -30027,7 +29973,6 @@
 30027,ship
 30028,truck
 30029,dog
-30030,airplane
 30031,horse
 30032,frog
 30033,horse
@@ -32022,7 +31967,6 @@
 32022,cat
 32023,airplane
 32024,ship
-32025,deer
 32026,airplane
 32027,deer
 32028,frog
@@ -32627,7 +32571,6 @@
 32627,airplane
 32628,airplane
 32629,frog
-32630,airplane
 32631,cat
 32632,airplane
 32633,horse
@@ -32859,7 +32802,6 @@
 32859,bird
 32860,frog
 32861,automobile
-32862,ship
 32863,dog
 32864,dog
 32865,dog
@@ -33487,7 +33429,6 @@
 33487,truck
 33488,truck
 33489,frog
-33490,airplane
 33491,bird
 33492,frog
 33493,frog
@@ -33867,7 +33808,6 @@
 33867,automobile
 33868,airplane
 33869,truck
-33870,ship
 33871,automobile
 33872,bird
 33873,deer
@@ -34464,7 +34404,6 @@
 34464,bird
 34465,deer
 34466,cat
-34467,bird
 34468,frog
 34469,ship
 34470,horse
@@ -35061,7 +35000,6 @@
 35061,frog
 35062,dog
 35063,horse
-35064,bird
 35065,truck
 35066,bird
 35067,deer
@@ -35200,7 +35138,6 @@
 35200,ship
 35201,dog
 35202,airplane
-35203,airplane
 35204,truck
 35205,cat
 35206,cat
@@ -35875,7 +35812,6 @@
 35875,bird
 35876,cat
 35877,ship
-35878,deer
 35879,automobile
 35880,dog
 35881,bird
@@ -36167,7 +36103,6 @@
 36167,dog
 36168,deer
 36169,deer
-36170,bird
 36171,bird
 36172,dog
 36173,horse
@@ -36775,7 +36710,6 @@
 36775,automobile
 36776,horse
 36777,horse
-36778,deer
 36779,bird
 36780,cat
 36781,ship
@@ -36783,7 +36717,6 @@
 36783,dog
 36784,ship
 36785,horse
-36786,bird
 36787,airplane
 36788,truck
 36789,frog
@@ -37356,7 +37289,6 @@
 37356,airplane
 37357,frog
 37358,cat
-37359,airplane
 37360,dog
 37361,dog
 37362,bird
@@ -37437,7 +37369,6 @@
 37437,dog
 37438,ship
 37439,deer
-37440,airplane
 37441,automobile
 37442,dog
 37443,deer
@@ -38131,7 +38062,6 @@
 38131,airplane
 38132,horse
 38133,truck
-38134,ship
 38135,deer
 38136,deer
 38137,ship
@@ -38283,7 +38213,6 @@
 38283,automobile
 38284,deer
 38285,horse
-38286,airplane
 38287,horse
 38288,bird
 38289,ship
@@ -38629,7 +38558,6 @@
 38629,airplane
 38630,dog
 38631,automobile
-38632,ship
 38633,dog
 38634,airplane
 38635,cat
@@ -40226,7 +40154,6 @@
 40226,bird
 40227,cat
 40228,cat
-40229,deer
 40230,truck
 40231,horse
 40232,bird
@@ -40513,7 +40440,6 @@
 40513,ship
 40514,frog
 40515,frog
-40516,bird
 40517,airplane
 40518,horse
 40519,automobile
@@ -40619,7 +40545,6 @@
 40619,airplane
 40620,airplane
 40621,dog
-40622,airplane
 40623,truck
 40624,bird
 40625,cat
@@ -40862,7 +40787,6 @@
 40862,airplane
 40863,deer
 40864,cat
-40865,ship
 40866,bird
 40867,horse
 40868,airplane
@@ -41452,7 +41376,6 @@
 41452,deer
 41453,airplane
 41454,deer
-41455,bird
 41456,automobile
 41457,airplane
 41458,airplane
@@ -41900,7 +41823,6 @@
 41900,truck
 41901,airplane
 41902,truck
-41903,ship
 41904,cat
 41905,truck
 41906,truck
@@ -43057,7 +42979,6 @@
 43057,dog
 43058,bird
 43059,dog
-43060,bird
 43061,horse
 43062,automobile
 43063,truck
@@ -44255,7 +44176,6 @@
 44255,deer
 44256,frog
 44257,bird
-44258,airplane
 44259,frog
 44260,frog
 44261,dog
@@ -45108,7 +45028,6 @@
 45108,truck
 45109,dog
 45110,bird
-45111,deer
 45112,deer
 45113,horse
 45114,airplane
@@ -45799,7 +45718,6 @@
 45799,truck
 45800,frog
 45801,airplane
-45802,deer
 45803,truck
 45804,bird
 45805,deer
@@ -47020,7 +46938,6 @@
 47020,ship
 47021,truck
 47022,ship
-47023,airplane
 47024,ship
 47025,dog
 47026,truck
@@ -47373,7 +47290,6 @@
 47373,horse
 47374,ship
 47375,deer
-47376,airplane
 47377,ship
 47378,automobile
 47379,ship
@@ -48661,7 +48577,6 @@
 48661,dog
 48662,horse
 48663,truck
-48664,airplane
 48665,frog
 48666,frog
 48667,dog
@@ -48735,7 +48650,6 @@
 48735,truck
 48736,bird
 48737,dog
-48738,ship
 48739,deer
 48740,bird
 48741,automobile
@@ -48882,7 +48796,6 @@
 48882,deer
 48883,dog
 48884,dog
-48885,deer
 48886,bird
 48887,frog
 48888,truck
@@ -49822,7 +49735,6 @@
 49822,ship
 49823,cat
 49824,truck
-49825,deer
 49826,cat
 49827,dog
 49828,ship
@@ -49921,7 +49833,6 @@
 49921,dog
 49922,airplane
 49923,cat
-49924,frog
 49925,ship
 49926,horse
 49927,truck

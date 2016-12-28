@@ -10,10 +10,14 @@
 using namespace cv;
 using namespace std;
 
+// vars.config parameters
 int NUM_FILES_TRAIN;
 int NUM_FILES_TEST;
 int DICTIONARY_SIZE;
 int K;
+int USE_KNN;
+int USE_SVM;
+int USE_BAYES;
 
 std::map<string, int> Label_ID;
 std::map<float, string> Label_ID_reverse;
@@ -21,26 +25,23 @@ std::map<float, string> Label_ID_reverse;
 string TEST_DIR = "test/";
 
 Mat labels;
-vector<int> label_vec;
 Mat train_descriptors;
 Mat trainingData;
 
-//vector<vector<cv::KeyPoint>> same_keys;
-
-vector<float> KNNResult;
-vector<float> SVMResult;
-
-TermCriteria tc(CV_TERMCRIT_ITER, 100, 0.001);
+TermCriteria tc(CV_TERMCRIT_ITER, 1000, 0.001);
 int retries = 1;
 int flags = KMEANS_PP_CENTERS;
 
+// Read the configuration file
 void initConfigVars()
 {
 	ifstream file("vars.config");
 	string str;
 	string delimiter = "=";
 
-	for (int i = 0; i < 4; i++)
+	std::cout << "Reading config file" << endl;
+
+	for (int i = 0; i < 7; i++)
 	{
 		getline(file, str);
 		size_t pos = 0;
@@ -70,9 +71,31 @@ void initConfigVars()
 		{
 			K = value;
 		}
+		else if (i == 4)
+		{
+			USE_KNN = value;
+		}
+		else if (i == 5)
+		{
+			USE_SVM = value;
+		}
+		else if (i == 6)
+		{
+			USE_BAYES = value;
+		}
+
 	}
+
+	std::cout << "Number of files for training: " << NUM_FILES_TRAIN << endl;
+	std::cout << "Number of files for testing: " << NUM_FILES_TEST << endl;
+	std::cout << "Vocabulary size: " << DICTIONARY_SIZE << endl;
+	std::cout << "KNN K " << K << endl;
+	std::cout << "USE KNN " << USE_KNN << endl;
+	std::cout << "USE SVM " << USE_SVM << endl;
+	std::cout << "USE BAYES " << USE_BAYES << endl << endl;
 }
 
+// Initialize the maps
 void instantiateMaps()
 {
 	Label_ID["frog"] = 0;
@@ -98,9 +121,10 @@ void instantiateMaps()
 	Label_ID_reverse[9] = "deer";
 }
 
+// Initialize the labels from CIFAR's file
 void initializeLabels(int number_of_images)
 {
-	cout << endl << "Initializing the labels (responses) from csv file" << endl;
+	std::cout << endl << "Initializing the labels (responses) from csv file" << endl;
 
 	ifstream file("trainLabels.csv");
 	string value;
@@ -114,84 +138,107 @@ void initializeLabels(int number_of_images)
 		int label = Label_ID.find(csv_label)->second;
 		labels.push_back(label);
 		number_of_labels++;
-		cout << i + 1 << " / " << number_of_images << '\r';
+		std::cout << i + 1 << " / " << number_of_images << '\r';
 
 	}
 
-	cout << endl;
-	cout << "Initiated " << number_of_labels << " labels" << endl;
+	std::cout << endl;
+	std::cout << "Initiated " << number_of_labels << " labels" << endl;
 }
 
-bool resultIsExpected(int pos, float result)
+// Apply kNN, SVM, BAYES
+void applyMethods(cv::BOWImgDescriptorExtractor bag_descr_extractor)
 {
-	return result == (pos / 10);
-}
+	if (USE_KNN == 0 && USE_SVM == 0 && USE_BAYES == 0)
+	{
+		return;
+	}
 
-void printResults()
-{
-	cout << endl << "Results: " << endl;
-	//process KNN results
-	int KNNSuccess = 0;
+	// Prepare the submission files
 	ofstream knn_sub("knn_submission.csv");
-	knn_sub << "id,label\n";
+	
+	ofstream svm_linear_sub("svm_linear_sub.csv");
+	ofstream svm_rbf_sub("svm_rbf_sub.csv");
+	ofstream svm_sig_sub("svm_sig_sub.csv");
 
-	cout << "Comparing " << KNNResult.size() << " KNN Results" << endl;
-
-	for (int i = 0; i < KNNResult.size(); i++)
-	{
-		if (resultIsExpected(i, KNNResult.at(i)))
-		{
-			KNNSuccess++;
-		}
-		knn_sub << i + 1 << "," << KNNResult.at(i) << "\n";
-	}
-
-	cout << "KNN Success Rate: " << KNNSuccess << " / " << KNNResult.size() << endl;
-
-	//process SVM results
-
-	int SVMSuccess = 0;
-	ofstream svm_sub("svm_submission.csv");
-	svm_sub << "id,label\n";
-
-	cout << "Comparing " << SVMResult.size() << " SVM Results" << endl;
-
-	for (int i = 0; i < SVMResult.size(); i++)
-	{
-		if (resultIsExpected(i, SVMResult.at(i)))
-		{
-			SVMSuccess++;
-		}
-		svm_sub << i + 1 << "," << SVMResult.at(i) << "\n";
-	}
-
-	cout << "SVM Success Rate: " << SVMSuccess << " / " << SVMResult.size() << endl;
-}
-
-void applyKNN(cv::BOWImgDescriptorExtractor bag_descr_extractor)
-{
-	//KNN CLASSIFIER
-	cout << endl << "Training KNN Classifier" << endl;
-
+	ofstream bayes_sub("bayes_submission.csv");
+	
+	//OpenCV's implementation
 	cv::Ptr<cv::KNearest> knn = new cv::KNearest;
-	knn->train(trainingData, labels, cv::Mat(), false, 32, false);
+	
+	cv::Ptr<cv::SVM> svm_linear = new cv::SVM;
+	cv::Ptr<cv::SVM> svm_rbf = new cv::SVM;
+	cv::Ptr<cv::SVM> svm_sig = new cv::SVM;
+	
+	cv::Ptr<cv::NormalBayesClassifier> bayes = new cv::NormalBayesClassifier;
 
-	cout << "KNN Classifier Trained" << endl;
+	//Train the classifiers
+	if (USE_KNN == 1)
+	{
+		std::cout << endl << "Training KNN Classifier" << endl;
+		
+		knn->train(trainingData, labels, cv::Mat(), false, 32, false);
+		std::cout << "KNN Classifier Trained" << endl;
+		knn_sub << "id,label\n";
+	}	
+	
+	if (USE_SVM == 1)
+	{
+		std::cout << endl << "Setting up SVM parameters" << endl;
+		
+		CvSVMParams params_lin;
+		params_lin.svm_type = CvSVM::C_SVC;
+		params_lin.kernel_type = CvSVM::LINEAR;
+		params_lin.term_crit = tc;
+		
+		CvSVMParams params_rbf;
+		params_rbf.svm_type = CvSVM::C_SVC;
+		params_rbf.kernel_type = CvSVM::RBF;
+		params_rbf.term_crit = tc;
 
-	cout << "KNN Testing" << endl;
+		CvSVMParams params_sig;
+		params_sig.svm_type = CvSVM::C_SVC;
+		params_sig.kernel_type = CvSVM::SIGMOID;
+		params_sig.term_crit = tc;
+
+		std::cout << "Training the SVM Linear" << endl;	
+		svm_linear->train(trainingData, labels, cv::Mat(), cv::Mat(), params_lin);
+		svm_linear_sub << "id,label\n";
+		std::cout << "SVM Linear Trained" << endl;
+
+		std::cout << "Training SVM RBF" << endl;
+		svm_rbf->train(trainingData, labels, cv::Mat(), cv::Mat(), params_rbf);
+		svm_rbf_sub << "id,label\n";
+		std::cout << "SVM RBF Trained" << endl;
+
+		std::cout << "Training the SVM Sigmoid" << endl;
+		svm_sig->train(trainingData, labels, cv::Mat(), cv::Mat(), params_sig);
+		svm_sig_sub << "id,label\n";
+		std::cout << "SVM Sigmoid Trained" << endl;
+	}
+
+	if (USE_BAYES == 1)
+	{
+		std::cout << "Training Normal Bayes Classifier" << endl;
+		bayes->train(trainingData, labels);
+		bayes_sub << "id,label\n";
+		std::cout << "Bayes Classifier Trained" << endl;
+	}
+
+	std::cout << endl << "Testing" << endl;
 
 	for (int i = 0; i < NUM_FILES_TEST; i++)
 	{
 		string test_image_name = TEST_DIR + to_string(i + 1) + ".png";
 		Mat image = cv::imread(test_image_name, CV_LOAD_IMAGE_GRAYSCALE);
-		
+
 		if (!image.data)
 		{
-			std::cout << "[SIFT 3] Error reading image " << test_image_name << endl;
+			std::cout << "[SIFT Testing] Error reading image " << test_image_name << endl;
 			exit(0);
 		}
 
-		cout << (i + 1) << " / " << NUM_FILES_TEST << '\r';
+		std::cout << (i + 1) << " / " << NUM_FILES_TEST << '\r';
 
 		cv::Ptr<cv::FeatureDetector> detector_test = new cv::SiftFeatureDetector();
 		vector<cv::KeyPoint> keypoints;
@@ -200,89 +247,71 @@ void applyKNN(cv::BOWImgDescriptorExtractor bag_descr_extractor)
 		Mat bowDescriptor_test;
 		bag_descr_extractor.compute(image, keypoints, bowDescriptor_test);
 
+		// If SIFT cannot extract descriptors this will have size [0x0]
+		// So we just assign a random label, the same to every submission
 		if (bowDescriptor_test.cols != DICTIONARY_SIZE)
-		{
-			cout << endl;
-			cout << "Error at image " << test_image_name << " Descriptor Size: " << bowDescriptor_test.size();
-			cout << endl;
+		{	
+			string rand_label = Label_ID_reverse.find(rand() % 10)->second;
+			if (USE_KNN) knn_sub << i + 1 << "," << rand_label << "\n";
+			if (USE_SVM)
+			{
+				svm_linear_sub << i + 1 << "," << rand_label << "\n";
+				svm_rbf_sub << i + 1 << "," << rand_label << "\n";
+				svm_sig_sub << i + 1 << "," << rand_label << "\n";
+			}
+			if (USE_BAYES) bayes_sub << i + 1 << "," << rand_label << "\n";
 		}
 		else
 		{
-			cv::Mat result;
-			knn->find_nearest(bowDescriptor_test, K, result, cv::Mat(), cv::Mat());
-			KNNResult.push_back(result.at<float>(0, 0));
+			if (USE_KNN)
+			{
+				cv::Mat resultKNN;
+				knn->find_nearest(bowDescriptor_test, K, resultKNN, cv::Mat(), cv::Mat());
+				knn_sub << i + 1 << "," << Label_ID_reverse.find(resultKNN.at<float>(0, 0))->second << "\n";
+			}
+			
+			if (USE_SVM)
+			{
+				float resultSVMLin;
+				float resultSVMRBF;
+				float resultSVMSig;
+				
+				resultSVMLin = svm_linear->predict(bowDescriptor_test);
+				svm_linear_sub << i + 1 << "," << Label_ID_reverse.find(resultSVMLin)->second << "\n";
+
+				resultSVMRBF = svm_rbf->predict(bowDescriptor_test);
+				svm_rbf_sub << i + 1 << "," << Label_ID_reverse.find(resultSVMRBF)->second << "\n";
+
+				resultSVMSig = svm_sig->predict(bowDescriptor_test);
+				svm_sig_sub << i + 1 << "," << Label_ID_reverse.find(resultSVMSig)->second << "\n";
+			}
+
+			if (USE_BAYES)
+			{
+				float resultBayes;
+				resultBayes = bayes->predict(bowDescriptor_test);
+				bayes_sub << i + 1 << "," << Label_ID_reverse.find(resultBayes)->second << "\n";
+			}
 		}
 	}
-	cout << endl;
-}
-
-void applySVM(cv::BOWImgDescriptorExtractor bag_descr_extractor)
-{
-	cout << endl << "Setting up SVM parameters" << endl;
-
-	CvSVMParams params;
-	params.svm_type = CvSVM::C_SVC;
-	params.kernel_type = CvSVM::RBF;
-	params.term_crit = tc;
-
-	std::cout << "Training the SVM" << endl;
-
-	CvSVM SVM;
-	SVM.train(trainingData, labels, cv::Mat(), cv::Mat(), params);
-
-	std::cout << "SVM Classifier Trained" << endl;
-
-	std::cout << "SVM Testing" << endl;
-	for (int i = 0; i < NUM_FILES_TEST; i++)
-	{
-		string test_image_name = TEST_DIR + to_string(i + 1) + ".png";
-		Mat image = cv::imread(test_image_name, CV_LOAD_IMAGE_GRAYSCALE);
-		if (!image.data)
-		{
-			std::cout << "[SIFT 3] Error reading image " << test_image_name << endl;
-			exit(0);
-		}
-
-		cout << (i + 1) << " / " << NUM_FILES_TEST << '\r';
-
-		cv::Ptr<cv::FeatureDetector> detector_test = new cv::SiftFeatureDetector();		
-		vector<cv::KeyPoint> keypoints;
-		detector_test->detect(image, keypoints);
-
-		Mat bowDescriptor_test;
-		bag_descr_extractor.compute(image, keypoints, bowDescriptor_test);
-
-		if (bowDescriptor_test.cols != DICTIONARY_SIZE)
-		{
-			cout << endl;
-			cout << "Error at image " << test_image_name << " Descriptor Size: " << bowDescriptor_test.size();
-			cout << endl;
-		}
-		else
-		{
-			float result;
-			result = SVM.predict(bowDescriptor_test);
-			SVMResult.push_back(result);
-		}
-	}
-	cout << endl;
+	std::cout << endl;
 }
 
 int main()
 {
-	cout << endl << "Populating maps" << endl << endl;
+	std::cout << endl << "Populating maps" << endl << endl;
 
 	initConfigVars();
 	
 	instantiateMaps();
 
+	// The dictionary to be created by the Bag of Words 
 	Mat dictionary;
-	cv::FileStorage fs("vocabulary.xml", cv::FileStorage::READ);
 
-	fs.release();
-	cout << "Vocabulary not detected. Creating..." << endl;
-	cout << "Extracting the Descriptors (Feature Vectors) using SIFT" << endl;
+	std::cout << "Creating Vocabulary" << endl;
+	std::cout << "Extracting the Descriptors using SIFT" << endl;
 
+	//Extract the descriptors from the test images using SIFT to build the vocabulary
 	for (int i = 0; i < NUM_FILES_TRAIN; i++)
 	{
 		string image_name_sift1 = "train/" + to_string(i + 1) + ".png";
@@ -304,15 +333,15 @@ int main()
 		}
 	}
 
-	cout << endl;
-	cout << endl << "Creating Bag of Words" << endl;
+	std::cout << endl;
+	std::cout << endl << "Creating Bag of Words" << endl;
 
 	cv::BOWKMeansTrainer bag_of_words_trainer(DICTIONARY_SIZE, tc, retries, flags);
 	dictionary = bag_of_words_trainer.cluster(train_descriptors);
 
-	cout << "Bag of Words info: " << dictionary.size() << endl << endl;
+	std::cout << "Bag of Words info: " << dictionary.size() << endl << endl;
 
-	cout << "Creating the Training Data for KNN and SVM based on Bag of Words" << endl;
+	std::cout << "Creating the Training Data for KNN and SVM based on Bag of Words" << endl;
 
 	cv::Ptr<DescriptorMatcher> descr_matcher(new FlannBasedMatcher);
 	cv::Ptr<cv::FeatureDetector> detector_train = new cv::SiftFeatureDetector();
@@ -323,6 +352,7 @@ int main()
 
 	int number_of_images = 0;
 
+	//After the vocabulary is built, we use it + the bag of words to compute the descriptors to create the feature vectors
 	for (int i = 0; i < NUM_FILES_TRAIN; i++)
 	{
 		string image_name_sift2 = "train/" + to_string(i + 1) + ".png";
@@ -338,6 +368,7 @@ int main()
 			Mat bowDescriptor;
 			bag_descr_extractor.compute(image, keypoints, bowDescriptor);
 
+			//If SIFT cannot extract descriptors, the size will be [0x0]
 			if (bowDescriptor.cols != DICTIONARY_SIZE)
 			{
 				std::cout << endl;
@@ -351,19 +382,15 @@ int main()
 		}
 	}
 
-	cout << endl;
+	std::cout << endl;
 
 	initializeLabels(number_of_images);
 
-	cout << endl << "Training Data Created" << endl;
-	cout << "Training Data Size: " << trainingData.size() << endl;
-	cout << "Number of labels: " << labels.size() << endl;
+	std::cout << endl << "Training Data Created" << endl;
+	std::cout << "Training Data Size: " << trainingData.size() << endl;
+	std::cout << "Number of labels: " << labels.size() << endl;
 
-	applyKNN(bag_descr_extractor);
-
-	applySVM(bag_descr_extractor);
-
-	printResults();
+	applyMethods(bag_descr_extractor);
 	
 	return 0;
 }
